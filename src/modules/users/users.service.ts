@@ -107,4 +107,8 @@ export class UsersService {
       throw new BadRequestException(`Invalid ID ${_id}`);
     }
   }
+
+  async findByEmail(email: string) {
+    return this.userModel.findOne({ email });
+  }
 }
