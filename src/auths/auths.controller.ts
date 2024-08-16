@@ -10,6 +10,7 @@ import { AuthsService } from './auths.service';
 import { CreateAuthDto } from '@/auths/dto/create-auth.dto';
 import { LocalAuthGuard } from '@/auths/passport/local-auth.guard';
 import { JwtAuthGuard } from '@/auths/passport/jwt-auth.guard';
+import { Public } from '@/decorator/customize';
 
 @Controller('auths')
 export class AuthsController {
@@ -24,6 +25,7 @@ export class AuthsController {
   }
 
   @Post('handle/login')
+  @Public() // kh check nhung route nay
   @UseGuards(LocalAuthGuard)
   handleLogin(@Request() req) {
     return this.authsService.login(req.user);
@@ -34,4 +36,11 @@ export class AuthsController {
   getProfile(@Request() req) {
     return req.user;
   }
+
+  @Post('register')
+  @Public()
+  register(@Body() createAuthDto: CreateAuthDto) {
+    return this.authsService.handleRegister(createAuthDto);
+  }
+
 }

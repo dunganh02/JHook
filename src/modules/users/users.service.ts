@@ -10,6 +10,9 @@ import { User } from '@/modules/users/schemas/user.schema';
 import mongoose, { Model } from 'mongoose';
 import { hashPasswordHelper } from '@/helpers/util';
 import aqp from 'api-query-params';
+import { CreateAuthDto } from '@/auths/dto/create-auth.dto';
+import { v4 as uuidv4 } from 'uuid';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class UsersService {
@@ -110,5 +113,31 @@ export class UsersService {
 
   async findByEmail(email: string) {
     return this.userModel.findOne({ email });
+  }
+
+  async handleRegister(registerDto: CreateAuthDto) {
+    // check email
+    const { name, email, password, username } = registerDto;
+
+    const checkEmail = await this.isEmailExist(email);
+    if (checkEmail) {
+      throw new BadRequestException(`Email ${email} already exists`);
+    }
+    const hashPassword = await hashPasswordHelper(password);
+    // console.log('>> hashPassword', hashPassword);
+    const user = await this.userModel.create({
+      name,
+      email,
+      password: hashPassword,
+      username,
+      isActive: false,
+      codeId: uuidv4(),
+      codeExpired: dayjs().add(1, 'days'), // thoi gian het han,
+    });
+    // tra phan hoi khi tao duoc account
+    return {
+      _id: user.id,
+    };
+    // send email
   }
 }
