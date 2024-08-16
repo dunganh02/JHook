@@ -1,9 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from '@/modules/users/schemas/user.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { hashPasswordHelper } from '@/helpers/util';
 import aqp from 'api-query-params';
 
@@ -78,11 +82,29 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(updateUserDto: UpdateUserDto) {
+    console.log('Update user:', updateUserDto);
+
+    // const { _id, ...updateData } = updateUserDto;
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      updateUserDto._id,
+      updateUserDto,
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedUser) {
+      throw new NotFoundException(
+        `User with ID ${updateUserDto._id} not found`,
+      );
+    }
+    return updatedUser;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(_id: string) {
+    if (mongoose.isValidObjectId({ _id })) {
+      return this.userModel.deleteOne({ _id });
+    } else {
+      throw new BadRequestException(`Invalid ID ${_id}`);
+    }
   }
 }
