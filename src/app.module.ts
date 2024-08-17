@@ -16,9 +16,46 @@ import { ReviewsModule } from '@/modules/reviews/reviews.module';
 import { AuthsModule } from '@/auths/auths.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from '@/auths/passport/jwt-auth.guard';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+      inject: [ConfigService],
+    }),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('MAIL_HOST'),
+          port: Number.parseInt(configService.get<string>('MAIL_PORT')),
+          // ignoreTLS: true,
+          // secure: false,
+          auth: {
+            user: configService.get<string>('MAIL_USER'),
+            pass: configService.get<string>('MAIL_PASS'),
+          },
+        },
+        defaults: {
+          from: 'padunggg.it@gmail.com',
+        },
+        preview: true,
+        template: {
+          dir: process.cwd() + '/template/',
+          adapter: new HandlebarsAdapter(), // or new PugAdapter() or new EjsAdapter()
+          options: {
+            strict: true,
+          },
+        },
+      }),
+      inject: [ConfigService],
+    }),
     UsersModule,
     LikesModule,
     MenuItemOptionsModule,
@@ -28,14 +65,7 @@ import { JwtAuthGuard } from '@/auths/passport/jwt-auth.guard';
     OrdersModule,
     RestaurantsModule,
     ReviewsModule,
-    ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-      }),
-      inject: [ConfigService],
-    }),
+    AuthsModule,
     AuthsModule,
   ],
   controllers: [AppController],
