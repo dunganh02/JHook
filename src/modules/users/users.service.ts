@@ -13,12 +13,14 @@ import aqp from 'api-query-params';
 import { CreateAuthDto } from '@/auths/dto/create-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import dayjs from 'dayjs';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<User>,
+    private mailerService: MailerService,
   ) {}
 
   isEmailExist = async (email: string) => {
@@ -124,20 +126,34 @@ export class UsersService {
       throw new BadRequestException(`Email ${email} already exists`);
     }
     const hashPassword = await hashPasswordHelper(password);
-    // console.log('>> hashPassword', hashPassword);
+    const codeId = uuidv4();
     const user = await this.userModel.create({
       name,
       email,
       password: hashPassword,
       username,
       isActive: false,
-      codeId: uuidv4(),
-      codeExpired: dayjs().add(1, 'days'), // thoi gian het han,
+      codeId: codeId,
+      codeExpired: dayjs().add(5, 'minutes'), // thoi gian het han,
     });
+
+    // send email
+    this.mailerService
+      .sendMail({
+        to: user.email, // list of receivers
+        subject: 'Active your account at @anhdung ✔', // Subject line
+        template: 'register.hbs',
+        context: {
+          name: user?.name ?? user.email,
+          activationCode: codeId,
+        },
+      })
+      .then(() => {})
+      .catch(() => {});
     // tra phan hoi khi tao duoc account
     return {
       _id: user.id,
+      to: user.email,
     };
-    // send email
   }
 }
