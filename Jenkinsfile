@@ -2,7 +2,7 @@ node{
     def mvnHome
     stage('Preparation'){
         println("Preparation")
-        sh "sleep 1000"
+        sh "sleep 10"
     }
 
     stage('Build'){
